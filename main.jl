@@ -6,15 +6,18 @@ using Plots
 
 # Configuration
 CUDA.allowscalar(false)
-newModel = true;
+newModel = false;
 saveModel = true;
+metrics = true;
+useGpu = false;
+clearVariables = true;
 
 # Import Data
 imgDimension = (146, 146);
 channels = 3;
 
 ## Dogs
-dogs_numImages = 1000;
+dogs_numImages = 2500;
 dogs_rawData = Float32.(zeros(imgDimension[1], imgDimension[2], channels, dogs_numImages));
 for element in 1:dogs_numImages
     cImg = load("data/dogs/$(element).jpg");
@@ -35,7 +38,7 @@ for element in 1:dogs_numImages
 end
 
 ## Cats
-cats_numImages = 1000;
+cats_numImages = 2500;
 cats_rawData = Float32.(zeros(imgDimension[1], imgDimension[2], channels, cats_numImages));
 for element in 1:cats_numImages
     cImg = load("data/cats/$(element).jpg");
@@ -83,61 +86,86 @@ model = Chain(
         MaxPool((2, 2)),
         Conv(convFilter, 32=>64, relu), # 3rd Conv Layer
         MaxPool((2, 2)),
-        Conv(convFilter, 64=>64, relu), # 4th Conv Layer
-        MaxPool((2, 2)),
-        Conv(convFilter, 64=>64, relu), # 5th Conv Layer
-        MaxPool((2, 2)),
         x -> reshape(x, :, size(x, 4)),
-        Dense(256=>125, relu, init=Flux.glorot_uniform),
-        Dense(125=>classes, sigmoid, init=Flux.glorot_uniform)
+        Dense(16384=>5250, relu, init=Flux.glorot_uniform),
+        Dense(5250=>classes, sigmoid, init=Flux.glorot_uniform)
     );
 if !newModel
     Flux.loadmodel!(model, JLD2.load("Model.jld2")["model"])
 end
-model = model |> gpu;
+if useGpu
+    model = model |> gpu;
+end
 
 # Hyperparameters
-epochs = 100;
+epochs = 10;
+α = 0.01;
+ψ = 0.0001;
 
 # Loss
 loss(x, y) = Flux.binarycrossentropy(model(x), y);
 
 # Optimizer
-opt = Flux.Optimiser(Flux.WeightDecay(1f-4), Adam());
+opt = Momentum(α, ψ);
 
 # Metrics
-lossLog = zeros(epochs, 2);
-accuracyLog = zeros(epochs, 2);
+if metrics
+    lossLog = zeros(epochs, 2);
+    accuracyLog = zeros(epochs, 2);
+end
 
 # Batching
-batchSize = 325;
+batchSize = 64;
 batches = Flux.DataLoader((train[1], train[2]), batchsize = batchSize, shuffle = true);
 
-# Training
-train = (train[1] |> gpu, train[2] |> gpu);
-val = (val[1] |> gpu, val[2] |> gpu);
-test = (test[1] |> gpu, test[2] |> gpu);
+# Training Setup
+if useGpu
+    train = (train[1] |> gpu, train[2] |> gpu);
+    val = (val[1] |> gpu, val[2] |> gpu);
+    test = (test[1] |> gpu, test[2] |> gpu);
+end
+
 trainData = Flux.MLUtils.getobs(train[1]);
 trainLabels = Flux.MLUtils.getobs(train[2]);
 formattedData = [(trainData, trainLabels)];
 valData = Flux.MLUtils.getobs(val[1]);
 valLabels = Flux.MLUtils.getobs(val[2]);
 
+# Clear Variables
+if clearVariables
+    rawData = nothing;
+    dogs_rawData = nothing;
+    cats_rawData = nothing;
+    dog_labels = nothing;
+    cat_labels = nothing;
+    labels = nothing;
+    GC.gc();
+end
+
+# Training Loop
 for epoch in 1:epochs
     for miniBatch in batches
-        miniBatch = (miniBatch[1] |> gpu, miniBatch[2] |> gpu);
+        if useGpu
+            miniBatch = (miniBatch[1] |> gpu, miniBatch[2] |> gpu);
+        end
         Flux.train!(loss, Flux.params(model), [miniBatch], opt);
     end
     
-    lossLog[epoch, 1] = loss(trainData, trainLabels);
-    lossLog[epoch, 2] = loss(valData, valLabels);
-    ŷ_train = round.(model(trainData));
-    accuracyLog[epoch, 1] = sum(ŷ_train .== trainLabels) / length(trainLabels) * 100;
-    ŷ_val = round.(model(valData));
-    accuracyLog[epoch, 2] = sum(ŷ_val .== valLabels) / length(valLabels) * 100;
-    
-    if epoch % 1 == 0
-        println("Epoch: ", epoch, " | Training Loss: ", lossLog[epoch, 1], " | Training Accuracy: ", accuracyLog[epoch, 1], "%", " | Validation Loss: ", lossLog[epoch, 2], " | Validation Accuracy: ", accuracyLog[epoch, 2], "%");
+    if (metrics)
+        lossLog[epoch, 1] = loss(trainData, trainLabels);
+        lossLog[epoch, 2] = loss(valData, valLabels);
+        ŷ_train = round.(model(trainData));
+        accuracyLog[epoch, 1] = sum(ŷ_train .== trainLabels) / length(trainLabels) * 100;
+        ŷ_val = round.(model(valData));
+        accuracyLog[epoch, 2] = sum(ŷ_val .== valLabels) / length(valLabels) * 100;
+        
+        if epoch % 1 == 0
+            println("Epoch: ", epoch, " | Training Loss: ", lossLog[epoch, 1], " | Training Accuracy: ", accuracyLog[epoch, 1], "%", " | Validation Loss: ", lossLog[epoch, 2], " | Validation Accuracy: ", accuracyLog[epoch, 2], "%");
+        end
+    else
+        if epoch % 1 == 0
+            println("Epoch: ", epoch);
+        end
     end
 end
 
@@ -155,7 +183,9 @@ if saveModel
 end
 
 # Loss Visualization
-plot(1:epochs, lossLog[:, 1], label="Training Loss", xlabel="Epochs", ylabel="Loss", title="Loss");
-display(plot!(1:epochs, lossLog[:, 2], label="Validation Loss", xlabel="Epochs", ylabel="Loss"));
-plot(1:epochs, accuracyLog[:, 1], label="Training Accuracy", xlabel="Epochs", ylabel="Accuracy", title="Accuracy");
-display(plot!(1:epochs, accuracyLog[:, 2], label="Validation Accuracy", xlabel="Epochs", ylabel="Accuracy"));
+if metrics
+    plot(1:epochs, lossLog[:, 1], label="Training Loss", xlabel="Epochs", ylabel="Loss", title="Loss");
+    display(plot!(1:epochs, lossLog[:, 2], label="Validation Loss", xlabel="Epochs", ylabel="Loss"));
+    plot(1:epochs, accuracyLog[:, 1], label="Training Accuracy", xlabel="Epochs", ylabel="Accuracy", title="Accuracy");
+    display(plot!(1:epochs, accuracyLog[:, 2], label="Validation Accuracy", xlabel="Epochs", ylabel="Accuracy"));
+end
