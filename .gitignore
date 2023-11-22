@@ -1,0 +1,7 @@
+/data
+*.jpg
+FileRename.jl
+ImageExtractor.jl
+ImageResizer.jl
+Model.jld2
+test.jl
