@@ -7,7 +7,7 @@ using Plots
 # Configuration
 CUDA.allowscalar(false)
 newModel = false;
-saveModel = true;
+saveModel = false;
 metrics = true;
 useGpu = false;
 clearVariables = true;
@@ -15,9 +15,10 @@ clearVariables = true;
 # Import Data
 imgDimension = (146, 146);
 channels = 3;
+numSamples = 2;
 
 ## Dogs
-dogs_numImages = 2500;
+dogs_numImages = numSamples;
 dogs_rawData = Float32.(zeros(imgDimension[1], imgDimension[2], channels, dogs_numImages));
 for element in 1:dogs_numImages
     cImg = load("data/dogs/$(element).jpg");
@@ -38,7 +39,7 @@ for element in 1:dogs_numImages
 end
 
 ## Cats
-cats_numImages = 2500;
+cats_numImages = numSamples;
 cats_rawData = Float32.(zeros(imgDimension[1], imgDimension[2], channels, cats_numImages));
 for element in 1:cats_numImages
     cImg = load("data/cats/$(element).jpg");
@@ -74,17 +75,22 @@ labels = vcat(dog_labels, cat_labels);
 # Data Formatting
 train, test, val = Flux.MLUtils.splitobs((rawData, labels[:, 1]'), at=(0.6, 0.2), shuffle=true);
 
-# Model Properties
+# Hyperparameters
+epochs = 10;
 classes = 1;
-convFilter = (3, 3);
+α = 0.01; # Learning Rate
+ψ = 0.0001; # Momentum
+κ = (3, 3); # Kernel Size
+ζ = 1; # Stride
+ρ = 0; # Padding
 
 # CNN Model
 model = Chain(
-        Conv(convFilter, 3=>16, relu), # 1st Conv Layer
+        Conv(κ, 3=>16, stride=ζ, pad=ρ, relu), # 1st Conv Layer
         MaxPool((2, 2)),
-        Conv(convFilter, 16=>32, relu), # 2nd Conv Layer
+        Conv(κ, 16=>32, stride=ζ, pad=ρ, relu), # 2nd Conv Layer
         MaxPool((2, 2)),
-        Conv(convFilter, 32=>64, relu), # 3rd Conv Layer
+        Conv(κ, 32=>64, stride=ζ, pad=ρ, relu), # 3rd Conv Layer
         MaxPool((2, 2)),
         x -> reshape(x, :, size(x, 4)),
         Dense(16384=>5250, relu, init=Flux.glorot_uniform),
@@ -96,11 +102,6 @@ end
 if useGpu
     model = model |> gpu;
 end
-
-# Hyperparameters
-epochs = 10;
-α = 0.01;
-ψ = 0.0001;
 
 # Loss
 loss(x, y) = Flux.binarycrossentropy(model(x), y);
@@ -115,7 +116,7 @@ if metrics
 end
 
 # Batching
-batchSize = 64;
+batchSize = 128;
 batches = Flux.DataLoader((train[1], train[2]), batchsize = batchSize, shuffle = true);
 
 # Training Setup
