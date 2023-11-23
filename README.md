@@ -42,7 +42,7 @@
   <summary>Training</summary>
   
   - Loss Function: _Log Cross Entropy_
-  - Optimizer: _Gradient Descent ($\alpha$, $\psi$)_
+  - Optimizer: _Gradient Descent_ ($\alpha$ , $\psi$)
 </details>
 
 ### Training Metrics
