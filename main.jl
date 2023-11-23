@@ -7,7 +7,7 @@ using Plots
 # Configuration
 CUDA.allowscalar(false)
 newModel = false;
-saveModel = false;
+saveModel = true;
 metrics = true;
 useGpu = false;
 clearVariables = true;
@@ -15,7 +15,7 @@ clearVariables = true;
 # Import Data
 imgDimension = (146, 146);
 channels = 3;
-numSamples = _; # Number of samples per class
+numSamples = 5000; # Number of samples per class
 
 ## Dogs
 dogs_numImages = numSamples;
@@ -76,13 +76,14 @@ labels = vcat(dog_labels, cat_labels);
 train, test, val = Flux.MLUtils.splitobs((rawData, labels[:, 1]'), at=(0.6, 0.2), shuffle=true);
 
 # Hyperparameters
-epochs = 10;
+epochs = 15;
 classes = 1;
 α = 0.01; # Learning Rate
 ψ = 0.0001; # Momentum
 κ = (3, 3); # Kernel Size
 ζ = 1; # Stride
 ρ = 0; # Padding
+λ = 0.0004; # Regularization
 
 # CNN Model
 model = Chain(
@@ -107,7 +108,7 @@ end
 loss(x, y) = Flux.binarycrossentropy(model(x), y);
 
 # Optimizer
-opt = Momentum(α, ψ);
+opt = Flux.Optimiser(ExpDecay(λ), Flux.Momentum(α, ψ));
 
 # Metrics
 if metrics
