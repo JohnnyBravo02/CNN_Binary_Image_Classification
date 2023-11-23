@@ -45,17 +45,31 @@
   - Optimizer: _Gradient Descent ($\alpha$, $\psi$)_
 </details>
 
-### Training
+### Training Metrics
 <details>
   <summary>Loss Log</summary>
 
   At Last Epoch
   
-  Training Loss: _0.1_ | Training Accuracy: _97.07_
+  Training Loss: _0.1_
   
-  Validation Loss: _0.1_ | Validation Accuracy: _97.1_
+  Validation Loss: _0.1_
   
   ![Screenshot 2023-11-23 174355](https://github.com/JohnnyBravo02/CNN_Binary_Image_Classification/assets/140975510/bfc0d9ea-e94e-4ffd-8b7a-78673ad2d5af)
+
+</details>
+
+<details>
+  <summary>Accuracy Log</summary>
+
+  At Last Epoch
+  
+  Training Accuracy: _97.07_
+  
+  Validation Accuracy: _97.1_
+  
+  ![Screenshot 2023-11-23 174342](https://github.com/JohnnyBravo02/CNN_Binary_Image_Classification/assets/140975510/aff72e80-14af-467b-96cd-51b166745d5c)
+
 
 </details>
 
