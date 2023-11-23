@@ -15,9 +15,9 @@
     - Activation: _ReLU_
   - Pooling Layers: _3_
     - Kernel Size: _2x2_
-    - Position: _Directly after Convolutional Layer_
+    - Position: _Directly after each Convolutional Layer_
   - Flattening Layer: _1_
-    - Position: _After last Polling Layer_
+    - Position: _After last Pooling Layer_
   - Dense Layers: _3_
     - $1^{st}$ nodes: _16384_
       - Activation: _ReLU_
