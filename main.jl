@@ -15,7 +15,7 @@ clearVariables = true;
 # Import Data
 imgDimension = (146, 146);
 channels = 3;
-numSamples = 2;
+numSamples = _; # Number of samples per class
 
 ## Dogs
 dogs_numImages = numSamples;
@@ -97,7 +97,7 @@ model = Chain(
         Dense(5250=>classes, sigmoid, init=Flux.glorot_uniform)
     );
 if !newModel
-    Flux.loadmodel!(model, JLD2.load("Model.jld2")["model"])
+    Flux.loadmodel!(model, JLD2.load("Model.jld2")["model"]);
 end
 if useGpu
     model = model |> gpu;
