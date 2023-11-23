@@ -33,7 +33,8 @@
   - Momentum ($\psi$): _0.0001_
   - Kernel Size ($\kappa$): _3x3_
   - Stride ($\zeta$): _1_
-  - Padding ($rho$): _0_
+  - Padding ($\rho$): _0_
+  - Weight Decay ($\lambda$): _0.0004_
   - Batch Size: 128
 </details>
 
@@ -44,5 +45,19 @@
   - Optimizer: _Gradient Descent ($\alpha$, $\psi$)_
 </details>
 
+### Training
+<details>
+  <summary>Loss Log</summary>
+
+  At Last Epoch
+  
+  Training Loss: _0.1_ | Training Accuracy: _97.07_
+  
+  Validation Loss: _0.1_ | Validation Accuracy: _97.1_
+  
+  ![Screenshot 2023-11-23 174355](https://github.com/JohnnyBravo02/CNN_Binary_Image_Classification/assets/140975510/bfc0d9ea-e94e-4ffd-8b7a-78673ad2d5af)
+
+</details>
+
 ### Test
-Test Accuracy: _89.06%_
+Test Accuracy: _97.15%_
