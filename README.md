@@ -3,7 +3,7 @@
 ### Goal
  _Design and train a **Small Convolutional Neural Network** in Julia and FluxML that accurately classifies images into either 2 classes:_
  - _Dog (1)_
- - _Cat (2)_
+ - _Cat (0)_
 
 ### Design
 <details>
